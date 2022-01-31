@@ -1421,8 +1421,6 @@ class AbstractBufferedFile(io.IOBase):
             from start of file, current location or end of file, resp.
         """
         loc = int(loc)
-        if not self.mode == "rb":
-            raise OSError(ESPIPE, "Seek only available in read mode")
         if whence == 0:
             nloc = loc
         elif whence == 1:
@@ -1433,7 +1431,10 @@ class AbstractBufferedFile(io.IOBase):
             raise ValueError("invalid whence (%s, should be 0, 1 or 2)" % whence)
         if nloc < 0:
             raise ValueError("Seek before start of file")
-        self.loc = nloc
+        if self.loc != nloc:
+            if not self.mode == "rb":
+                raise OSError(ESPIPE, "Seek only available in read mode")
+            self.loc = nloc
         return self.loc
 
     def write(self, data):

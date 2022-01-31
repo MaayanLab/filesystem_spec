@@ -986,7 +986,10 @@ class AbstractFileSystem(metaclass=_Cached):
 
         path = self._strip_protocol(path)
         if "b" not in mode:
+            rw = "+" in mode
             mode = mode.replace("t", "") + "b"
+            if rw:
+                mode = mode.replace("+","") + "+"
 
             text_kwargs = {
                 k: kwargs.pop(k)
@@ -1449,7 +1452,7 @@ class AbstractBufferedFile(io.IOBase):
         data: bytes
             Set of bytes to be written.
         """
-        if self.mode not in {"wb", "ab"}:
+        if "w" not in self.mode and "a" not in self.mode and "+" not in self.mode:
             raise ValueError("File not in write mode")
         if self.closed:
             raise ValueError("I/O operation on closed file.")

@@ -4,7 +4,7 @@ import os
 import stat
 import threading
 import time
-from errno import EIO, ENOENT
+from errno import EIO, ENOENT, ENOTSUP
 
 from fuse import FUSE, FuseOSError, LoggingMixIn, Operations
 
@@ -90,7 +90,12 @@ class FUSEr(Operations):
         logger.debug("create %s", (path, flags))
         fn = "".join([self.root, path.lstrip("/")])
         self.fs.touch(fn)  # OS will want to get attributes immediately
-        f = self.fs.open(fn, "wb")
+        accmode = flags & os.O_ACCMODE
+        if accmode == os.O_RDWR:
+            mode = "wb+"
+        else:
+            mode = "wb"
+        f = self.fs.open(fn, mode)
         self.cache[self.counter] = f
         self.counter += 1
         return self.counter - 1
@@ -98,13 +103,28 @@ class FUSEr(Operations):
     def open(self, path, flags):
         logger.debug("open %s", (path, flags))
         fn = "".join([self.root, path.lstrip("/")])
-        if flags % 2 == 0:
-            # read
-            mode = "rb"
-        else:
-            # write/create
-            mode = "wb"
-        self.cache[self.counter] = self.fs.open(fn, mode)
+        try:
+            # convert open flags into python-style mode
+            accmode = flags & os.O_ACCMODE
+            if accmode == os.O_RDONLY:
+                mode = "rb"
+            elif accmode == os.O_WRONLY:
+                if flags & os.O_APPEND:
+                    mode = "ab"
+                else:
+                    mode = "wb"
+            elif accmode == os.O_RDWR:
+                if flags & os.O_APPEND:
+                    mode = 'ab+'
+                elif flags & os.O_TRUNC:
+                    mode = 'wb+'
+                else:
+                    mode = 'rb+'
+            else:
+                raise NotImplementedError
+            self.cache[self.counter] = self.fs.open(fn, mode)
+        except NotImplementedError as e:
+            raise FuseOSError(ENOTSUP) from e
         self.counter += 1
         return self.counter - 1
 

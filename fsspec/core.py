@@ -98,7 +98,10 @@ class OpenFile(object):
         return self.open().__fspath__()
 
     def __enter__(self):
+        rw = "+" in self.mode
         mode = self.mode.replace("t", "").replace("b", "") + "b"
+        if rw:
+            mode = mode.replace("+","") + "+"
 
         f = self.fs.open(self.path, mode=mode)
 

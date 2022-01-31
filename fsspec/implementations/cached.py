@@ -489,7 +489,7 @@ class WholeFileCacheFileSystem(CachingFileSystem):
 
     def open_many(self, open_files):
         paths = [of.path for of in open_files]
-        if "r" in open_files.mode:
+        if "r" in open_files.mode and "+" not in open_files.mode:
             self._mkcache()
         else:
             return [

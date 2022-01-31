@@ -150,7 +150,7 @@ class LocalFileSystem(AbstractFileSystem):
 
     def _open(self, path, mode="rb", block_size=None, **kwargs):
         path = self._strip_protocol(path)
-        if self.auto_mkdir and "w" in mode:
+        if self.auto_mkdir and "w" in mode or "a" in mode:
             self.makedirs(self._parent(path), exist_ok=True)
         return LocalFileOpener(path, mode, fs=self, **kwargs)
 
@@ -251,7 +251,7 @@ class LocalFileOpener(io.IOBase):
 
     def _open(self):
         if self.f is None or self.f.closed:
-            if self.autocommit or "w" not in self.mode:
+            if self.autocommit or ("w" not in self.mode and "a" not in self.mode):
                 self.f = open(self.path, mode=self.mode)
                 if self.compression:
                     compress = compr[self.compression]
@@ -279,7 +279,7 @@ class LocalFileOpener(io.IOBase):
         self.f = None
         loc = state.pop("loc", None)
         self.__dict__.update(state)
-        if "r" in state["mode"]:
+        if "r" in state["mode"] and "+" not in state["mode"]:
             self.f = None
             self._open()
             self.f.seek(loc)

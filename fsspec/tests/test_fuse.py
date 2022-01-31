@@ -139,3 +139,20 @@ def test_seek_rw(mount_local):
     fh.seek(2)
     assert fh.read() == "st"
     fh.close()
+
+def test_seek_rw_plus(mount_local):
+    source_dir, mount_dir = mount_local
+    fh = open(mount_dir / "text", "w+")
+    fh.write("teST")
+    fh.seek(2)
+    fh.write("st")
+    fh.seek(0)
+    assert fh.read() == 'test'
+    fh.close()
+
+    fh = open(mount_dir / "text", "r+")
+    assert fh.read() == "test"
+    fh.write('!')
+    fh.seek(0)
+    assert fh.read() == 'test!'
+    fh.close()

@@ -168,23 +168,24 @@ class MemoryFileSystem(AbstractFileSystem):
             parent = self._parent(parent)
             if self.isfile(parent):
                 raise FileExistsError(parent)
-        if mode in ["rb", "ab", "rb+"]:
-            if path in self.store:
-                f = self.store[path]
-                if mode == "ab":
-                    # position at the end of file
-                    f.seek(0, 2)
-                else:
-                    # position at the beginning of file
-                    f.seek(0)
-                return f
+        if path in self.store:
+            f = self.store[path]
+            if "a" in mode:
+                # position at the end of file
+                f.seek(0, 2)
             else:
-                raise FileNotFoundError(path)
-        if mode == "wb":
+                # position at the beginning of file
+                f.seek(0)
+            if "w" in mode:
+                f.truncate()
+            return f
+        elif "a" in mode or "w" in mode:
             m = MemoryFile(self, path)
             if not self._intrans:
                 m.commit()
             return m
+        else:
+            raise FileNotFoundError(path)
 
     def cp_file(self, path1, path2, **kwargs):
         path1 = self._strip_protocol(path1)
